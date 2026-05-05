@@ -41,8 +41,8 @@ BASE_DOMAIN_NAME=
 
 ## 📂 Volumes
 
-- `./rootfs/config/mailcow` - Configuration files
-- `./rootfs/data/mailcow` - Application data
+- `./volumes/config/mailcow` - Configuration files
+- `./volumes/data/mailcow` - Application data
 
 ## 🔐 Security
 
