@@ -1,4 +1,4 @@
-# nginx proxy address - https://172.17.0.1:62000
+# nginx proxy address - http://172.17.0.1:61028
 
 name: mailcow
 x-logging: &default-logging
@@ -431,6 +431,7 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       HTTP_PORT: 80
       HTTPS_PORT: 443
       HTTP_REDIRECT: ${HTTP_REDIRECT:-n}
@@ -466,11 +467,29 @@ services:
       mailcow-network:
         aliases:
           - nginx
+      proxy:
+      cloudflare:
     depends_on:
       - redis-mailcow
       - php-fpm-mailcow
       - sogo-mailcow
       - rspamd-mailcow
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://nginx-mailcow:80'
+      - 'cloudflare.hostname=mailcow.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.nginx-mailcow.entrypoints=http'
+      - 'traefik.http.routers.nginx-mailcow-secure.tls=true'
+      - 'traefik.http.routers.nginx-mailcow.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.nginx-mailcow-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.nginx-mailcow.middlewares=nginx-mailcow-https-redirect'
+      - 'traefik.http.routers.nginx-mailcow-secure.entrypoints=https'
+      - 'traefik.http.routers.nginx-mailcow-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.nginx-mailcow-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.nginx-mailcow-secure.service=nginx-mailcow'
+      - 'traefik.http.services.nginx-mailcow.loadbalancer.server.port=80'
 
   acme-mailcow:
     image: ghcr.io/mailcow/acme:1.92
@@ -721,6 +740,10 @@ networks:
       config:
         - subnet: ${IPV4_NETWORK:-172.22.1}.0/24
         - subnet: ${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+  proxy:
+    external: true
+  cloudflare:
+    external: true
 
 volumes:
   vmail-vol-1:
