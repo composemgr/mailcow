@@ -22,7 +22,7 @@ x-env: &default-env
 
 services:
   unbound-mailcow:
-    image: ghcr.io/mailcow/unbound:1.24
+    image: ghcr.io/mailcow/unbound:1.25
     restart: always
     pull_policy: always
     tty: true
